@@ -5,9 +5,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Scanner;
+import java.util.*;
 
 @Service
 public class LearnerServiceImpl implements LearnerService{
@@ -32,7 +30,7 @@ public class LearnerServiceImpl implements LearnerService{
         int count = 0;
         while(scan.hasNext() && count < questionAmount){
             // sets the question as the first line in the loop
-            String question = scan.nextLine().replace("\"","");
+            String question = scan.nextLine().replace("\"","").replace(".","");
             //format question to be only numeric and alpha
 
             char [] check = question.toCharArray();
@@ -87,7 +85,7 @@ public class LearnerServiceImpl implements LearnerService{
     }
 
     @Override
-    public void GradeQuiz(Quiz submission) {
+    public String GradeQuiz(Quiz submission) {
         HashMap<String, Integer> counter = new HashMap<String, Integer>();
         counter.put("M1", 0);
         counter.put("M2", 0);
@@ -101,7 +99,7 @@ public class LearnerServiceImpl implements LearnerService{
 
         for(int i = 0; i < submission.getStudentAns().size(); i++){
            // submission.getStudentAns().get(2).getQuestion();
-            String q = submission.getStudentAns().get(i).getQuestion();
+            String q = submission.getStudentAns().get(i).getQuestion().replace(".", "");
             String a = submission.getStudentAns().get(i).getAnswer();
             //optionsMapping.get(q) -> hashmap<ans, list(values)>: agree -> {m1,m3,m4}
             //optionsMapping.get(q).get(a);
@@ -112,6 +110,7 @@ public class LearnerServiceImpl implements LearnerService{
             // q1 -> SA
             // q1 -> {...} ->{SA -> m4
 
+
             char [] check = q.toCharArray();
             for(int y = 0; y< q.length(); y++){
                 if (Character.isAlphabetic(check[y]) || (Character.isDigit(check[y]) || check[y] == ' ')){
@@ -121,6 +120,7 @@ public class LearnerServiceImpl implements LearnerService{
                     q = q.replace(String.valueOf(check[y]),"");
                 }
             }
+
             ArrayList<String> ansArr = optionsMapping.get(q).get(a);
             // x  0  1  2
             //   [m1,m3,f1]
@@ -129,6 +129,7 @@ public class LearnerServiceImpl implements LearnerService{
             for(int x = 0; x < ansArr.size(); x++){
                 String current = ansArr.get(x);
 
+
                 if(a.contains("Strongly")){
                     counter.put(current, counter.get(current) +1);
                 }
@@ -136,8 +137,105 @@ public class LearnerServiceImpl implements LearnerService{
             }
 
         }
+        Integer total = 0;
+        for (Map.Entry<String, Integer> entry : counter.entrySet()) {
+            String key = entry.getKey();
+            Integer value = entry.getValue();
+            total += value;
+        }
 
-        System.out.println(counter);
+        for (Map.Entry<String, Integer> entry : counter.entrySet()) {
+            double percent  = 0;
+            String key = entry.getKey();
+            Integer value = entry.getValue();
+            percent = (((double)value) / total) *100;
+            percent = Math.round(percent);
+        }
+        // Control Freak Learner type.
+        Integer controlFreakCount = 0;
+        controlFreakCount += counter.get("F1");
+        controlFreakCount += counter.get("M2");
+        controlFreakCount += counter.get("M1");
+        controlFreakCount += counter.get("F4");
 
+        double controlFreakPercent = learnerPercent(controlFreakCount, total);
+
+
+        Integer escapeArtistCount = 0;
+        escapeArtistCount += counter.get("F2");
+        escapeArtistCount += counter.get("M3");
+        escapeArtistCount += counter.get("M4");
+
+        double escapeArtistPercent = learnerPercent(escapeArtistCount, total);
+
+
+        Integer nonchalantCount = 0;
+        nonchalantCount += counter.get("M1");
+        nonchalantCount += counter.get("M3");
+        nonchalantCount += counter.get("F3");
+
+        double nonchalantPercent = learnerPercent(nonchalantCount, total);
+
+
+        Integer helplessVictimCount = 0;
+        helplessVictimCount += counter.get("M1");
+        helplessVictimCount += counter.get("M3");
+        helplessVictimCount += counter.get("F3");
+
+        double helplessVictimPercent = learnerPercent(helplessVictimCount, total);
+
+        ArrayList<Pair> listOfTypes = new ArrayList<>();
+        listOfTypes.add(new Pair("Control Freak",controlFreakPercent));
+        listOfTypes.add(new Pair("Escape Artists", escapeArtistPercent));
+        listOfTypes.add(new Pair("Nonchalant n'er do well", nonchalantPercent));
+        listOfTypes.add(new Pair("Helpless Victim", helplessVictimPercent));
+
+
+        PriorityQueue<Pair> maxheap = new PriorityQueue<Pair>((a,b) -> Double.compare(b.percent,a.percent));
+        maxheap.addAll(listOfTypes);
+        ArrayList<Pair> ans = new ArrayList<>();
+        ans.add(maxheap.poll());
+        double max = ans.get(0).percent;
+        while (!maxheap.isEmpty() ){
+            if(maxheap.peek().percent == max){
+                ans.add(maxheap.poll());
+            }else{
+                maxheap.poll();
+            }
+        }
+        // [a, b] or [a]  or [a,b,c]
+        // a,b or a or a,b,c
+        //urs: a,b, or a, or ...
+        String ansStr = "";
+        for(int z = 0; z < ans.size(); z++){
+            ansStr += ans.get(z);
+            if(z != ans.size()-1){
+                ansStr += ",";
+            }
+
+        }
+        return ansStr;
+    }
+    public double learnerPercent(Integer count, Integer total){
+        double learnerPercent = (((double)count) / total) *100;
+        learnerPercent = Math.round(learnerPercent);
+        return  learnerPercent;
+    }
+
+    class Pair{
+        String name;
+        Double percent;
+        public Pair(String name, Double percent){
+            this.percent = percent;
+            this.name = name;
+        }
+
+        @Override
+        public String toString() {
+            return "Pair{" +
+                    "name='" + name + '\'' +
+                    ", percent=" + percent +
+                    '}';
+        }
     }
 }

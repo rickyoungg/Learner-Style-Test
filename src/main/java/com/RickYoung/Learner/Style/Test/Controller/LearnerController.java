@@ -24,8 +24,7 @@ public class LearnerController {
 
     @PostMapping(value = "/compute", consumes = {"application/json"})
     public String postJson(@RequestBody Quiz submission){
-        learnerServicel.GradeQuiz(submission);
-        return "got it";
+        return learnerServicel.GradeQuiz(submission);
     }
 
 
