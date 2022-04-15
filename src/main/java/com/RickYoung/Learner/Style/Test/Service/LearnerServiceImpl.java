@@ -1,10 +1,16 @@
 package com.RickYoung.Learner.Style.Test.Service;
 
 import com.RickYoung.Learner.Style.Test.Model.Quiz;
+import org.apache.tomcat.util.http.fileupload.IOUtils;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
+import org.apache.commons.io.FileUtils;
+import org.springframework.util.ResourceUtils;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 
 @Service
@@ -17,12 +23,29 @@ public class LearnerServiceImpl implements LearnerService{
         ArrayList<String> outputs = new ArrayList<>();
 
         //sets the csv file for the scanner
-        File f = new File("src/main/resources/options.csv");
+        File f = null;
+        try {
+            //f = new ClassPathResource("options.csv").getFile();
+            ClassPathResource classPathResource = new ClassPathResource("options.csv");
+
+            InputStream inputStream = classPathResource.getInputStream();
+            f= File.createTempFile("options", ".csv");
+            try {
+                FileUtils.copyInputStreamToFile(inputStream, f);
+            } finally {
+                IOUtils.closeQuietly(inputStream);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("File Path breaks");
+        }
+
         Scanner scan = null;
         try {
             scan = new Scanner(f);
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            //e.printStackTrace();
+            System.out.println("failed local file");
         }
         int questionAmount = 35;
         // new array with the 4 different options
